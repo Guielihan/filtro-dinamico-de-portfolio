@@ -1,1 +1,0 @@
-# filtro-dinamico-de-portfolio
