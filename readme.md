@@ -1,9 +1,5 @@
 # 🎨 Portfólio Pessoal - Filtro Dinâmico
 
-![Preview Principal](./preview/screenshot.png)
-
-Um portfólio interativo e moderno com sistema de filtros dinâmicos estilo "chips", desenvolvido para exibir projetos de forma organizada e elegante.
-
 ## 📸 Demonstração
 
 <div align="center">
