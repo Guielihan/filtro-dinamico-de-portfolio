@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // estado atual do filtro
     let currentFilter = 'all';
+    let pressedButton = null;
+    let isStretching = false;
+    let currentActiveButton = null;
 
     /**
      * atualiza o contador de projetos visíveis com animação
@@ -72,6 +75,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * cria efeito de esticamento chiclete ao pressionar
+     * @param {HTMLElement} targetButton - Botão alvo
+     */
+    function stretchIndicatorTo(targetButton) {
+        if (!currentActiveButton || targetButton === currentActiveButton) return;
+
+        const activeRect = currentActiveButton.getBoundingClientRect();
+        const targetRect = targetButton.getBoundingClientRect();
+        const navRect = currentActiveButton.parentElement.getBoundingClientRect();
+
+        const activeLeft = activeRect.left - navRect.left;
+        const targetLeft = targetRect.left - navRect.left;
+
+        // calcula o início e fim do esticamento
+        const stretchStart = Math.min(activeLeft, targetLeft);
+        const stretchEnd = Math.max(activeLeft + activeRect.width, targetLeft + targetRect.width);
+        const stretchWidth = stretchEnd - stretchStart;
+
+        indicator.classList.add('stretching');
+        indicator.style.width = `${stretchWidth}px`;
+        indicator.style.transform = `translateX(${stretchStart}px)`;
+    }
+
+    /**
      * define o botao ativo e remove dos outros
      * @param {HTMLElement} activeButton - Botão que deve ficar ativo
      */
@@ -83,21 +110,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
         activeButton.classList.add('active');
         activeButton.setAttribute('aria-pressed', 'true');
+        currentActiveButton = activeButton;
+        
+        // remove classe de esticamento e atualiza com animação spring
+        indicator.classList.remove('stretching');
         updateIndicator(activeButton);
     }
     filterButtons.forEach(button => {
-        button.addEventListener('click', (event) => {
-            const filter = button.getAttribute('data-filter');
+        // efeito elastíco ao pressionar
+        button.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            pressedButton = button;
+            isStretching = true;
+            
+            if (button !== currentActiveButton) {
+                stretchIndicatorTo(button);
+            }
+        });
 
-            setActiveButton(button);
-            filterProjects(filter);
+        // completa a transição ao soltar
+        button.addEventListener('pointerup', (event) => {
+            if (isStretching && pressedButton === button) {
+                const filter = button.getAttribute('data-filter');
+                setActiveButton(button);
+                filterProjects(filter);
+            }
+            
+            pressedButton = null;
+            isStretching = false;
+        });
+
+        // cancela e volta ao estado original
+        button.addEventListener('pointercancel', () => {
+            if (isStretching && currentActiveButton) {
+                indicator.classList.remove('stretching');
+                updateIndicator(currentActiveButton);
+            }
+            pressedButton = null;
+            isStretching = false;
+        });
+
+        // cancela se sair do botão enquanto pressiona
+        button.addEventListener('pointerleave', () => {
+            if (isStretching && pressedButton === button && currentActiveButton) {
+                indicator.classList.remove('stretching');
+                updateIndicator(currentActiveButton);
+                pressedButton = null;
+                isStretching = false;
+            }
         });
 
         // suporte para navegação por teclado
         button.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                button.click();
+                const filter = button.getAttribute('data-filter');
+                setActiveButton(button);
+                filterProjects(filter);
             }
         });
     });
@@ -112,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // inicializa a posição do indicador
     const activeButton = document.querySelector('.filter-btn.active');
     if (activeButton) {
+        currentActiveButton = activeButton;
         updateIndicator(activeButton);
     }
 
